@@ -616,7 +616,6 @@ def create_height_distribution_chart(characters: pd.DataFrame, target_image_heig
 
     return fig
 
-
 def create_character_ranking_barchart(tierlists: pd.DataFrame, target_image_height=108,
                                       bar_spacing=0.1,
                                       aspect_ratio=0.05, **kwargs):
@@ -860,7 +859,7 @@ def create_race_class_correlation_plot(characters: pd.DataFrame, **kwargs):
 def create_character_ranking_trend(tierlists: pd.DataFrame, **kwargs):
     selected_authors = ["zetsu"]
     select_all_authors_flag = False
-    selected_character = None  # name of character or None
+    selected_character = "amlin"  # name of character or None
 
     if select_all_authors_flag:
         filter_df = tierlists.copy()
