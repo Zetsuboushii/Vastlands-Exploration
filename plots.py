@@ -133,31 +133,64 @@ def create_birthday_distribution_clock_diagram(characters: pd.DataFrame, **kwarg
     return fig
 
 
-def create_combined_pie_charts(enemies: pd.DataFrame, min_percentage: float = 2.0, **kwargs):
+@include_plot
+@include_plot
+def create_combined_bar_charts(enemies: pd.DataFrame, min_percentage: float = 5.0, **kwargs):
+
     fig, axes = plt.subplots(1, 3, figsize=(20, 8))
 
     def group_and_plot(data, column, ax, title):
         # Explode the column into separate rows
         df_normalized = data.explode(column).reset_index(drop=True)
+        total = len(data.index)
 
         # Group by the column and count occurrences
         group = df_normalized.groupby(column).size().sort_values(ascending=False)
-        total = group.sum()
 
         # Calculate percentages and separate small groups
         percentages = (group / total) * 100
-        large_groups = group[percentages >= min_percentage]
-        other_group = group[percentages < min_percentage].sum()
+        grouped_with_percentage = pd.concat([group, percentages], axis=1)
+        grouped_with_percentage.columns = ["count", "percentages"]
+
+        large_groups = grouped_with_percentage[
+            grouped_with_percentage["percentages"] >= min_percentage
+            ]
+        other_group = grouped_with_percentage[
+            grouped_with_percentage["percentages"] < min_percentage
+            ].sum()
+
+        other_count = other_group["count"]
+        other_percentage = other_group["percentages"]
 
         # Combine large groups and the "Other" category
-        if other_group > 0:
-            grouped_data = pd.concat([large_groups, pd.Series({'Other': other_group})])
+        if other_count > 0:
+            other_df = pd.DataFrame(
+                {
+                    "count": [other_count],
+                    "percentages": [other_percentage]
+                },
+                index=["Other"]
+            )
+            grouped_data = pd.concat([large_groups, other_df])
         else:
             grouped_data = large_groups
 
-        # Plot pie chart
-        ax.pie(grouped_data, labels=grouped_data.index, autopct='%1.1f%%', startangle=90)
+        # --- Plot as a bar chart using the "percentages" column ---
+        ax.bar(grouped_data.index, grouped_data["percentages"], color="skyblue")
         ax.set_title(title)
+        ax.set_ylabel("Percentage (%)")
+        ax.set_xticklabels(grouped_data.index, rotation=45, ha='right')
+
+        # Optionally, add percentage labels above each bar
+        for i, (label, row) in enumerate(grouped_data.iterrows()):
+            ax.text(
+                i,
+                row["percentages"] + 0.5,  # a small offset above the bar
+                f"{row['percentages']:.1f}%",
+                ha="center",
+                va="bottom",
+                fontsize=9
+            )
 
     # Plot Weaknesses
     group_and_plot(enemies, "weaknesses", axes[0], 'Distribution of Weaknesses')
@@ -171,6 +204,7 @@ def create_combined_pie_charts(enemies: pd.DataFrame, min_percentage: float = 2.
     # Adjust layout
     plt.tight_layout()
     return fig
+
 
 
 def create_ability_score_distribution_plot(enemies: pd.DataFrame, **kwargs):
@@ -856,10 +890,9 @@ def create_race_class_correlation_plot(characters: pd.DataFrame, **kwargs):
     return fig
 
 
-@include_plot
 def create_character_ranking_trend(tierlists: pd.DataFrame, **kwargs):
-    selected_authors = ["zetsu"]
-    select_all_authors_flag = False
+    selected_authors = [""]
+    select_all_authors_flag = True
     selected_character = None  # name of character or None
 
     if select_all_authors_flag:
