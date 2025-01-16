@@ -271,6 +271,7 @@ def create_character_class_bar_chart(characters: pd.DataFrame, **kwargs):
     plt.xticks(np.arange(n_classes), character_classes, rotation=45, ha='right')
     ax.legend()
     plt.tight_layout()
+    return fig
 
 
 def _create_grouping_pie_chart(df: pd.DataFrame, group_column: str, title: str, legend: bool = True,
@@ -568,7 +569,8 @@ def create_population_distribution_map(places: pd.DataFrame, markers: pd.DataFra
 
 
 def offset_image(y, character_name, ax, target_height):
-    img_path = os.path.join('data', 'images', f"{character_name.lower()}.png")
+    project_root = Path(__file__).resolve().parent
+    img_path = project_root / 'data' / 'images' / f"{character_name.lower()}.png"
 
     if not os.path.exists(img_path):
         print(f"Image for {character_name} not found at {img_path}")
@@ -650,6 +652,7 @@ def create_height_distribution_chart(characters: pd.DataFrame, target_image_heig
     return fig
 
 
+@include_plot
 def create_character_ranking_barchart(tierlists: pd.DataFrame, target_image_height=108,
                                       bar_spacing=0.1,
                                       aspect_ratio=0.05, **kwargs):

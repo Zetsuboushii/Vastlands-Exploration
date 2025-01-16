@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Dynamic Plot with Separate Plots File</title>
+    <style>
+        #plot-container {
+            overflow: visible;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Choose Plot Type</h1>
+
+<form id="plot-form" onsubmit="return false;">
+    <label for="plotType">Plot Type:</label>
+    <select id="plotType">
+        <option value="scatter" selected>Scatter Plot</option>
+        <option value="hist">Histogram</option>
+    </select>
+    <br><br>
+
+    <div id="scatter-options">
+        <label for="xValues">X Values (comma-separated):</label>
+        <input id="xValues" type="text" value="1,2,3,4">
+        <br><br>
+
+        <label for="yValues">Y Values (comma-separated):</label>
+        <input id="yValues" type="text" value="10,5,6,8">
+    </div>
+
+    <!-- Only relevant for histogram: data -->
+    <div id="hist-options" style="display: none;">
+        <label for="histValues">Data (comma-separated):</label>
+        <input id="histValues" type="text" value="1,2,2,3,3,3,4,4,5,6,6">
+    </div>
+
+    <br>
+    <button id="fetch-plot-button">Plot</button>
+</form>
+
+<div id="plot-container"></div>
+
+<script>
+    const plotTypeEl = document.getElementById('plotType');
+    const scatterDiv = document.getElementById('scatter-options');
+    const histDiv = document.getElementById('hist-options');
+    const xValuesEl = document.getElementById('xValues');
+    const yValuesEl = document.getElementById('yValues');
+    const histValuesEl = document.getElementById('histValues');
+    const container = document.getElementById('plot-container');
+
+    plotTypeEl.addEventListener('change', () => {
+        if (plotTypeEl.value === 'scatter') {
+            scatterDiv.style.display = 'block';
+            histDiv.style.display = 'none';
+        } else if (plotTypeEl.value === 'hist') {
+            scatterDiv.style.display = 'none';
+            histDiv.style.display = 'block';
+        }
+    });
+
+    document.getElementById('fetch-plot-button').addEventListener('click', () => {
+        const plotType = plotTypeEl.value;
+
+        let url = 'http://localhost:5000/plot?plot_type=' + plotType;
+
+        if (plotType === 'scatter') {
+            const xStr = encodeURIComponent(xValuesEl.value);
+            const yStr = encodeURIComponent(yValuesEl.value);
+            url += `&x=${xStr}&y=${yStr}`;
+        } else if (plotType === 'hist') {
+            const dataStr = encodeURIComponent(histValuesEl.value);
+            url += `&data=${dataStr}`;
+        }
+
+        container.innerHTML = '';
+
+        fetch(url)
+            .then(response => response.text())
+            .then(plotHTML => {
+                const range = document.createRange();
+                const frag = range.createContextualFragment(plotHTML);
+                container.appendChild(frag);
+            })
+            .catch(err => console.error("Error fetching plot:", err));
+    });
+</script>
+
+</body>
+</html>

@@ -1,8 +1,6 @@
 import os
-
 import click
 from matplotlib import pyplot as plt
-
 import decorators
 import mongo_connector
 import plots
