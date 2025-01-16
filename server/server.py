@@ -1,5 +1,4 @@
-# server.py
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from utils import get_dataframes
 from main import _method_is_included
@@ -25,7 +24,7 @@ def initialize_data():
 
 def render_plot_to_html(method_name, data):
     method = getattr(plots, method_name)
-    generated_plot = method(data)
+    generated_plot = method(**data)
 
     if isinstance(generated_plot, plt.Figure):
         html_plot = mpld3.fig_to_html(generated_plot)
@@ -53,6 +52,14 @@ def plot_endpoint():
     html_output = render_plot_to_html(method_name, DATA)
     return html_output
 
+
+@app.route('/available_plots', methods=['GET'])
+def available_plots():
+    """
+    Returns a JSON list of all valid plot methods (PLOT_GEN_METHODS),
+    so you can see which method_name values are allowed.
+    """
+    return jsonify(PLOT_GEN_METHODS)
 
 def main():
     initialize_data()

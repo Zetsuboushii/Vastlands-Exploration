@@ -2,8 +2,9 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Dynamic Plot with Separate Plots File</title>
+    <title>Dynamic Plot from Available Methods</title>
     <style>
+        /* Allow the plot to overflow so nothing is clipped */
         #plot-container {
             overflow: visible;
             margin-top: 20px;
@@ -12,80 +13,53 @@
 </head>
 <body>
 
-<h1>Choose Plot Type</h1>
+<h1>Select a Plot Method</h1>
 
-<form id="plot-form" onsubmit="return false;">
-    <label for="plotType">Plot Type:</label>
-    <select id="plotType">
-        <option value="scatter" selected>Scatter Plot</option>
-        <option value="hist">Histogram</option>
-    </select>
-    <br><br>
-
-    <div id="scatter-options">
-        <label for="xValues">X Values (comma-separated):</label>
-        <input id="xValues" type="text" value="1,2,3,4">
-        <br><br>
-
-        <label for="yValues">Y Values (comma-separated):</label>
-        <input id="yValues" type="text" value="10,5,6,8">
-    </div>
-
-    <!-- Only relevant for histogram: data -->
-    <div id="hist-options" style="display: none;">
-        <label for="histValues">Data (comma-separated):</label>
-        <input id="histValues" type="text" value="1,2,2,3,3,3,4,4,5,6,6">
-    </div>
-
-    <br>
-    <button id="fetch-plot-button">Plot</button>
-</form>
+<select id="plotSelect">
+    <!-- Will be populated dynamically from /available_plots -->
+</select>
+<button id="fetch-plot-button">Show Plot</button>
 
 <div id="plot-container"></div>
 
 <script>
-    const plotTypeEl = document.getElementById('plotType');
-    const scatterDiv = document.getElementById('scatter-options');
-    const histDiv = document.getElementById('hist-options');
-    const xValuesEl = document.getElementById('xValues');
-    const yValuesEl = document.getElementById('yValues');
-    const histValuesEl = document.getElementById('histValues');
+    document.addEventListener('DOMContentLoaded', () => {
+        const plotSelect = document.getElementById('plotSelect');
     const container = document.getElementById('plot-container');
 
-    plotTypeEl.addEventListener('change', () => {
-        if (plotTypeEl.value === 'scatter') {
-            scatterDiv.style.display = 'block';
-            histDiv.style.display = 'none';
-        } else if (plotTypeEl.value === 'hist') {
-            scatterDiv.style.display = 'none';
-            histDiv.style.display = 'block';
-        }
-    });
+        // 1. Fetch list of available plots when page loads
+        fetch('http://localhost:5000/available_plots')
+            .then(response => response.json())
+            .then(plotMethods => {
+                // Populate the dropdown
+                plotMethods.forEach(method => {
+                    const option = document.createElement('option');
+                    option.value = method;
+                    option.textContent = method;
+                    plotSelect.appendChild(option);
+                });
+            })
+            .catch(err => console.error("Error fetching available plots:", err));
 
+        // 2. When "Show Plot" is clicked, fetch the selected plot
     document.getElementById('fetch-plot-button').addEventListener('click', () => {
-        const plotType = plotTypeEl.value;
+        const selectedMethod = plotSelect.value;
+        const url = `http://localhost:5000/plot?method_name=${encodeURIComponent(selectedMethod)}`;
 
-        let url = 'http://localhost:5000/plot?plot_type=' + plotType;
-
-        if (plotType === 'scatter') {
-            const xStr = encodeURIComponent(xValuesEl.value);
-            const yStr = encodeURIComponent(yValuesEl.value);
-            url += `&x=${xStr}&y=${yStr}`;
-        } else if (plotType === 'hist') {
-            const dataStr = encodeURIComponent(histValuesEl.value);
-            url += `&data=${dataStr}`;
-        }
-
+        // Clear any old plot
         container.innerHTML = '';
 
+        // Fetch new plot HTML
         fetch(url)
             .then(response => response.text())
             .then(plotHTML => {
+                // Insert the plot HTML (including <script> tags)
                 const range = document.createRange();
                 const frag = range.createContextualFragment(plotHTML);
                 container.appendChild(frag);
             })
             .catch(err => console.error("Error fetching plot:", err));
+    });
     });
 </script>
 

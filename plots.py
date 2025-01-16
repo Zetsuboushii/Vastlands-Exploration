@@ -2,7 +2,6 @@ import ast
 import os
 from pathlib import Path
 from typing import Optional
-
 import matplotlib.cm as cm
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
@@ -14,7 +13,6 @@ from PIL import Image
 from adjustText import adjust_text
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 from scipy import stats
-
 from decorators import include_plot
 from utils import calculate_age, get_day_of_year, get_evaluated_tierlist_df, \
     get_joined_tierlists_characters_df
@@ -135,7 +133,6 @@ def create_birthday_distribution_clock_diagram(characters: pd.DataFrame, **kwarg
 
 @include_plot
 def create_combined_bar_charts(enemies: pd.DataFrame, min_percentage: float = 5.0, **kwargs):
-
     fig, axes = plt.subplots(1, 3, figsize=(20, 8))
 
     def group_and_plot(data, column, ax, title):
@@ -203,7 +200,6 @@ def create_combined_bar_charts(enemies: pd.DataFrame, min_percentage: float = 5.
     # Adjust layout
     plt.tight_layout()
     return fig
-
 
 
 def create_ability_score_distribution_plot(enemies: pd.DataFrame, **kwargs):
@@ -706,13 +702,10 @@ def create_character_ranking_barchart(tierlists: pd.DataFrame, target_image_heig
     plt.margins(y=0)
     plt.tight_layout()
 
-    output_dir = Path('data/plots/character_ranking_distribution.svg')
-    output_dir.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_dir, format='svg')
-
     return fig
 
 
+@include_plot
 def create_character_ranking_barchart_no_image(tierlists: pd.DataFrame, **kwargs):
     rank_df = get_evaluated_tierlist_df(tierlists)
 
