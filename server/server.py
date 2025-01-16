@@ -1,15 +1,15 @@
+from io import BytesIO
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from utils import get_dataframes
-from main import _method_is_included
-import plots  # your custom plot file
+from main import _method_is_in_api_included
+import plots
 import matplotlib.pyplot as plt
-import mpld3
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
-CORS(app)  # Allow cross-origin if your HTML is served elsewhere
+CORS(app)
 
-# Global (cached) variables
 DATA = None
 PLOT_GEN_METHODS = None
 
@@ -19,7 +19,8 @@ def initialize_data():
     data, _ = get_dataframes(faergria_map_url="", faergria_map_data_skip=True, force=False)
     DATA = data
     all_plot_methods = dir(plots)
-    PLOT_GEN_METHODS = list(filter(_method_is_included, all_plot_methods))
+    PLOT_GEN_METHODS = list(filter(_method_is_in_api_included, all_plot_methods))
+    print("initialize data")
 
 
 def render_plot_to_html(method_name, data):
@@ -27,9 +28,13 @@ def render_plot_to_html(method_name, data):
     generated_plot = method(**data)
 
     if isinstance(generated_plot, plt.Figure):
-        html_plot = mpld3.fig_to_html(generated_plot)
+        # Convert the Matplotlib figure to SVG
+        svg_io = BytesIO()
+        generated_plot.savefig(svg_io, format='svg', bbox_inches='tight')
+        svg_io.seek(0)
+        svg_data = svg_io.getvalue().decode('utf-8')
         plt.close(generated_plot)
-        return html_plot
+        return svg_data  # Return the raw SVG
     else:
         return f"Method '{method_name}' did not return a Matplotlib Figure."
 
@@ -37,8 +42,8 @@ def render_plot_to_html(method_name, data):
 @app.route('/plot', methods=['GET'])
 def plot_endpoint():
     """
-    Example endpoint: /plot?method_name=generate_scatter_plot
-    It will call the matching function in plots.py and return the HTML result.
+    Endpoint to generate and return a plot in SVG format.
+    Example: /plot?method_name=generate_scatter_plot
     """
     method_name = request.args.get('method_name', '')
 
@@ -46,25 +51,30 @@ def plot_endpoint():
         return "No 'method_name' parameter provided.", 400
 
     if method_name not in PLOT_GEN_METHODS:
-        return (f"Method '{method_name}' is not found in "
-                f"available methods: {PLOT_GEN_METHODS}"), 404
+        return f"Method '{method_name}' is not valid. Available methods: {PLOT_GEN_METHODS}", 404
 
-    html_output = render_plot_to_html(method_name, DATA)
-    return html_output
+    svg_output = render_plot_to_html(method_name, DATA)
+    return svg_output  # Return raw SVG directly
 
 
 @app.route('/available_plots', methods=['GET'])
 def available_plots():
     """
-    Returns a JSON list of all valid plot methods (PLOT_GEN_METHODS),
-    so you can see which method_name values are allowed.
+    Returns a JSON list of all valid plot methods (PLOT_GEN_METHODS).
     """
     return jsonify(PLOT_GEN_METHODS)
 
+
 def main():
     initialize_data()
+    start_scheduler()
     app.run(debug=True, port=5000)
 
+
+def start_scheduler():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(initialize_data, 'interval', hours=1)
+    scheduler.start()
 
 if __name__ == '__main__':
     main()

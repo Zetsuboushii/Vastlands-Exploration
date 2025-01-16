@@ -14,6 +14,10 @@ def _method_is_included(name: str):
             decorators.included_method_names is None or name in decorators.included_method_names))
 
 
+def _method_is_in_api_included(name: str):
+    return (name.startswith("create_") and (
+            decorators.included_api_method_names is None or name in decorators.included_api_method_names))
+
 @click.command("plot", help="Render the plots locally")
 @click.option("--export-all", "-e", default=False, is_flag=True, help="Export all plots in the data/plots dir")
 @click.option("--export-format", "--format", default="png", help="Export format for exported plots (e.g. png/svg)")
