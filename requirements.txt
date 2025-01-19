@@ -18,4 +18,3 @@ beautifulsoup4 == 4.12.3
 bs4 == 0.0.2
 flask
 flask_cors
-mpld3
