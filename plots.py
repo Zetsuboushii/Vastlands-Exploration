@@ -645,10 +645,6 @@ def create_height_distribution_chart(characters: pd.DataFrame, target_image_heig
     plt.margins(y=0)
     plt.tight_layout()
 
-    output_dir = Path(output_dir)
-
-    plt.savefig(output_dir / "", format='svg')
-
     return fig
 
 
