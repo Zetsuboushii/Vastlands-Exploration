@@ -889,9 +889,10 @@ def create_race_class_correlation_plot(characters: pd.DataFrame, **kwargs):
     return fig
 
 
+@include_plot
 def create_character_ranking_trend(tierlists: pd.DataFrame, **kwargs):
-    selected_authors = [""]
-    select_all_authors_flag = True
+    selected_authors = ["Nayru"]
+    select_all_authors_flag = False
     selected_character = None  # name of character or None
 
     if select_all_authors_flag:
