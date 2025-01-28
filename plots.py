@@ -1065,6 +1065,7 @@ def create_character_ranking_trend_linechart(
     return fig
 
 
+@include_to_api
 @include_plot
 def create_character_ranking_heatmap(
         tierlists: pd.DataFrame,
