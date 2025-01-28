@@ -977,6 +977,25 @@ def create_character_ranking_trend(tierlists: pd.DataFrame, **kwargs):
     # Filter to only changing characters
     long_df = long_df[long_df['Character'].isin(changing_characters)]
 
+    def track_changes_using_sessionNr(df):
+        results = []
+        grouped = df.groupby(['author', 'Character'])
+        for (author, character), group in grouped:
+            group = group.sort_values(by='sessionNr')
+            sessions = group['sessionNr'].tolist()
+            tier_values = group['TierValue'].tolist()
+            if len(tier_values) > 1:
+                for i in range(1, len(tier_values)):
+                    if tier_values[i] != tier_values[i - 1]:  # Only track changes
+                        results.append(
+                            f"{author}: {character} - Session {sessions[i - 1]}: {tier_values[i - 1]} -> Session {sessions[i]}: {tier_values[i]}"
+                        )
+        return results
+
+    rating_changes_only = track_changes_using_sessionNr(long_df)
+    for line in rating_changes_only:
+        print(line)
+
     if long_df.empty:
         print("No characters have changed their rating based on the specified conditions.")
         return None
