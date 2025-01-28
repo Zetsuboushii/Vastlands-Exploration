@@ -53,6 +53,8 @@ Dict[str, Dict[str, Any]]:
         "actions_data": "actions.json",
         "enemies_data": "enemies.json",
         "effect_data": "effects.json",
+        "weapons_data": "weapons.json",
+        "weapon_abilities_data": "abilities.json"
     }
     endpoints = {key: API_URL + endpoint for key, endpoint in endpoints.items()}
     data = {key: get_data_by_api(key, endpoint, force) for key, endpoint in
