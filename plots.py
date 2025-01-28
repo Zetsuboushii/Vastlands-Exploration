@@ -2,7 +2,6 @@ import ast
 import os
 from pathlib import Path
 from typing import Optional
-
 import matplotlib.cm as cm
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
@@ -14,12 +13,12 @@ from PIL import Image
 from adjustText import adjust_text
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 from scipy import stats
-
-from decorators import include_plot
+from decorators import include_plot, include_to_api
 from utils import calculate_age, get_day_of_year, get_evaluated_tierlist_df, \
     get_joined_tierlists_characters_df
 
 
+@include_to_api
 def create_gender_distribution(characters, **kwargs):
     sex_counts = characters['sex'].value_counts()
     labels = sex_counts.index.tolist()
@@ -58,6 +57,7 @@ def create_age_distribution_200y_focus(characters, **kwargs):
     return fig
 
 
+@include_to_api
 def create_age_distribution_normalized(characters, races, **kwargs):
     characters['age'] = characters['birthday'].apply(calculate_age)
     characters = characters.dropna(subset=['age'])
@@ -133,7 +133,6 @@ def create_birthday_distribution_clock_diagram(characters: pd.DataFrame, **kwarg
     return fig
 
 def create_combined_bar_charts(enemies: pd.DataFrame, min_percentage: float = 5.0, **kwargs):
-
     fig, axes = plt.subplots(1, 3, figsize=(20, 8))
 
     def group_and_plot(data, column, ax, title):
@@ -203,7 +202,6 @@ def create_combined_bar_charts(enemies: pd.DataFrame, min_percentage: float = 5.
     return fig
 
 
-
 def create_ability_score_distribution_plot(enemies: pd.DataFrame, **kwargs):
     as_avg = enemies[["str", "dex", "con", "int", "wis", "cha"]].mean()
     enemies['sum_stats'] = enemies[['str', 'dex', 'con', 'int', 'wis', 'cha']].sum(axis=1)
@@ -244,6 +242,7 @@ def create_stats_distribution_plot(enemies: pd.DataFrame, **kwargs):
     return fig
 
 
+@include_to_api
 def create_character_class_bar_chart(characters: pd.DataFrame, **kwargs):
     character_classes = characters["character_class"].unique()
     sexes = characters["sex"].unique()
@@ -269,6 +268,7 @@ def create_character_class_bar_chart(characters: pd.DataFrame, **kwargs):
     plt.xticks(np.arange(n_classes), character_classes, rotation=45, ha='right')
     ax.legend()
     plt.tight_layout()
+    return fig
 
 
 def _create_grouping_pie_chart(df: pd.DataFrame, group_column: str, title: str, legend: bool = True,
@@ -566,7 +566,8 @@ def create_population_distribution_map(places: pd.DataFrame, markers: pd.DataFra
 
 
 def offset_image(y, character_name, ax, target_height):
-    img_path = os.path.join('data', 'images', f"{character_name.lower()}.png")
+    project_root = Path(__file__).resolve().parent
+    img_path = project_root / 'data' / 'images' / f"{character_name.lower()}.png"
 
     if not os.path.exists(img_path):
         print(f"Image for {character_name} not found at {img_path}")
@@ -588,6 +589,7 @@ def offset_image(y, character_name, ax, target_height):
     ax.add_artist(ab)
 
 
+@include_to_api
 def create_height_distribution_chart(characters: pd.DataFrame, target_image_height=100,
                                      bar_spacing=1,
                                      aspect_ratio=0.05, **kwargs):
@@ -641,13 +643,10 @@ def create_height_distribution_chart(characters: pd.DataFrame, target_image_heig
     plt.margins(y=0)
     plt.tight_layout()
 
-    output_dir = Path(output_dir)
-
-    plt.savefig(output_dir / "", format='svg')
-
     return fig
 
 
+@include_to_api
 def create_character_ranking_barchart(tierlists: pd.DataFrame, target_image_height=108,
                                       bar_spacing=0.1,
                                       aspect_ratio=0.05, **kwargs):
@@ -701,13 +700,10 @@ def create_character_ranking_barchart(tierlists: pd.DataFrame, target_image_heig
     plt.margins(y=0)
     plt.tight_layout()
 
-    output_dir = Path('data/plots/character_ranking_distribution.svg')
-    output_dir.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_dir, format='svg')
-
     return fig
 
 
+@include_to_api
 def create_character_ranking_barchart_no_image(tierlists: pd.DataFrame, **kwargs):
     rank_df = get_evaluated_tierlist_df(tierlists)
 
@@ -768,17 +764,19 @@ def _create_grouped_boxplots(characters: pd.DataFrame, x_grouping: str, y_values
     return fig
 
 
+@include_to_api
 def create_muscle_mass_boxplots_by_race(characters: pd.DataFrame, **kwargs):
     characters_copy = characters.copy()
     characters_copy = characters_copy[
         (characters_copy['muscle_mass'] != 0) & (characters_copy['muscle_mass'].notnull())]
     characters_copy = characters_copy.reset_index(drop=True)
-    _create_grouped_boxplots(characters_copy, "race", "muscle_mass", "Muscle mass",
+    return _create_grouped_boxplots(characters_copy, "race", "muscle_mass", "Muscle mass",
                              "Muscle mass distribution by race")
 
 
+@include_to_api
 def create_weight_boxplots_by_race(characters: pd.DataFrame, **kwargs):
-    _create_grouped_boxplots(characters, "race", "weight", "Weight", "Weight distribution by race")
+    return _create_grouped_boxplots(characters, "race", "weight", "Weight", "Weight distribution by race")
 
 
 def _create_correlation_plot(characters: pd.DataFrame, x_key: str, y_key: str, title: str,
@@ -834,6 +832,7 @@ def create_muscle_mass_height_correlation_plot(characters: pd.DataFrame, **kwarg
                                     filter_y_zeros=True, filter_x_zeros=True)
 
 
+@include_to_api
 def create_cup_rating_plot(characters: pd.DataFrame, tierlists: pd.DataFrame, **kwargs):
     combined_df = get_joined_tierlists_characters_df(characters, tierlists)
     combined_df = combined_df[combined_df["sex"] == "w"]
@@ -843,6 +842,7 @@ def create_cup_rating_plot(characters: pd.DataFrame, tierlists: pd.DataFrame, **
                                     filter_y_zeros=True, filter_x_zeros=True)
 
 
+@include_to_api
 def create_muscle_mass_rating_correlation_plot(characters: pd.DataFrame, tierlists: pd.DataFrame,
                                                **kwargs):
     combined_df = get_joined_tierlists_characters_df(characters, tierlists)
@@ -850,6 +850,7 @@ def create_muscle_mass_rating_correlation_plot(characters: pd.DataFrame, tierlis
                                     filter_y_zeros=True, filter_x_zeros=True)
 
 
+@include_to_api
 def create_height_rating_correlation_plot(characters: pd.DataFrame, tierlists: pd.DataFrame,
                                           **kwargs):
     combined_df = get_joined_tierlists_characters_df(characters, tierlists)

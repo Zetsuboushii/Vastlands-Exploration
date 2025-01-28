@@ -91,8 +91,9 @@ def fetch_faergria_map(faegria_map_url: str):
             shutil.copyfileobj(response.raw, file)
 
 
-def save_character_images(characters: pd.DataFrame, output_dir: str = "./data/images"):
-    output_dir = Path(output_dir)
+def save_character_images(characters: pd.DataFrame, output_dir: str = "data/images"):
+    project_root = Path(__file__).resolve().parent
+    output_dir = project_root / output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
     base_url = "https://zetsuboushii.github.io/image-host/resized/dnd/characters/"
     for character_name in characters["name"]:
