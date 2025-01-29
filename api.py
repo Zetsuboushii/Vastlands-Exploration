@@ -97,7 +97,7 @@ def save_character_images(characters: pd.DataFrame, output_dir: str = "data/imag
     project_root = Path(__file__).resolve().parent
     output_dir = project_root / output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
-    base_url = "https://zetsuboushii.github.io/image-host/resized/dnd/characters/"
+    base_url = "https://images.zetsuboushii.site/resized/dnd/characters/"
     for character_name in characters["name"]:
         character_name = character_name.lower()
         image_url = f"{base_url}{character_name}.png"
