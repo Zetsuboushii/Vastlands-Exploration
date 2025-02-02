@@ -1069,7 +1069,7 @@ def create_character_ranking_trend_linechart(
 @include_plot
 def create_character_ranking_heatmap(
         tierlists: pd.DataFrame,
-        selected_authors=["u-ranos"],
+        selected_authors=["Escaar"],
         select_all_authors_flag=False,
         selected_character=None,  # None or string
         printing_flag=False,
