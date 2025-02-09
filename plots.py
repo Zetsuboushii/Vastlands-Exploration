@@ -132,6 +132,8 @@ def create_birthday_distribution_clock_diagram(characters: pd.DataFrame, **kwarg
     ax.set_title("Birthday distribution by race")
     return fig
 
+
+@include_to_api
 def create_combined_bar_charts(enemies: pd.DataFrame, min_percentage: float = 5.0, **kwargs):
     fig, axes = plt.subplots(1, 3, figsize=(20, 8))
 
