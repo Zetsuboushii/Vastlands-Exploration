@@ -7,7 +7,8 @@ class Character(Entity):
                  muscle_mass: int,
                  functions: list[str], character_class: str, subclasses: list[str],
                  masterclass: str, homes: list[str],
-                 alignment: str, status: str, relationships: list[tuple[str, str]], lover: str):
+                 alignment: str, likes: list[str], dislikes: [str], status: str, relationships: list[tuple[str, str]],
+                 lover: str):
         self.name = name
         self.surname = surname
         self.title = title
@@ -28,6 +29,8 @@ class Character(Entity):
         self.masterclass = masterclass
         self.homes = homes
         self.alignment = alignment
+        self.likes = likes
+        self.dislikes = dislikes
         self.status = status
         self.relationships = relationships
         self.lover = lover
@@ -55,6 +58,8 @@ class Character(Entity):
             masterclass=data.get('masterclass', ''),
             homes=data.get('homes', []),
             alignment=data.get('alignment', ''),
+            likes=data.get('likes', []),
+            dislikes=data.get('dislikes', []),
             status="am Leben" if data.get('status', None) == "true" else "tot" if data.get('status',
                                                                                            None) == "false" else data.get(
                 'status', None),
