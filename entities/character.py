@@ -7,7 +7,8 @@ class Character(Entity):
                  muscle_mass: int,
                  functions: list[str], character_class: str, subclasses: list[str],
                  masterclass: str, homes: list[str],
-                 alignment: str, affiliations: list[list[str]], likes: list[str], dislikes: [str], status: str,
+                 alignment: str, affiliations: list[list[str]], likes: list[list[str]], dislikes: list[list[str]],
+                 status: str,
                  relationships: list[tuple[str, str]],
                  lover: str):
         self.name = name

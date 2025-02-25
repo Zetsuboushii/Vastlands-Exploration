@@ -54,7 +54,7 @@ def plot_endpoint():
         return f"Method '{method_name}' is not valid. Available methods: {PLOT_GEN_METHODS}", 404
 
     svg_output = render_plot_to_html(method_name, DATA)
-    return svg_output  # Return raw SVG directly
+    return svg_output
 
 
 @app.route('/available_plots', methods=['GET'])
