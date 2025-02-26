@@ -19,3 +19,5 @@ bs4 == 0.0.2
 flask
 flask_cors
 apscheduler
+spacy
+scikit-learn
