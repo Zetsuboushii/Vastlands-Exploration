@@ -12,7 +12,7 @@ import requests
 import mongo_connector
 from entities import Entity
 
-API_URL = "https://v2.tome.zetsuboushii.site/api/"
+API_URL = "https://tome.zetsuboushii.site/api/"
 
 
 def get_potentially_cached_data(key: str, endpoint: str, force: bool, data_key: str = None) -> Dict[
