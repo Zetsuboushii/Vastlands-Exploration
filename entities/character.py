@@ -17,7 +17,8 @@ class Character(Entity):
                  status: str,
                  relationships: list[dict],
                  alt_images: list[str],
-                 content: dict):
+                 content: dict,
+                 hidden: bool):
         self.name = name
         self.surname = surname
         self.title = title
@@ -52,6 +53,7 @@ class Character(Entity):
         self.relationships = relationships
         self.alt_images = alt_images
         self.content = content
+        self.hidden = hidden
 
     @staticmethod
     def from_json(data):
@@ -75,5 +77,6 @@ class Character(Entity):
             status=data.get('status', ''),
             relationships=data.get('relationships', []),
             alt_images=data.get('alt_images', []),
-            content=data.get('content', {})
+            content=data.get('content', {}),
+            hidden=data.get('hidden', False)
         )

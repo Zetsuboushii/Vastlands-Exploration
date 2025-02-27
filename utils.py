@@ -234,6 +234,12 @@ def get_dataframes(faergria_map_url: str, faergria_map_data_skip: bool, force: b
     save_character_images(dataframes["characters"])
     tierlist_df = get_tierlist_df()
     dataframes['tierlists'] = tierlist_df
+    # drop rows where hidden is true and then drop the column
+    dataframes['characters'] = (
+        dataframes['characters'][~dataframes['characters']['hidden']]
+        .drop('hidden', axis=1)
+        .reset_index(drop=True)
+    )
     return dataframes
 
 
