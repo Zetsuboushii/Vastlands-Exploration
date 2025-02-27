@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from PIL import Image
 from adjustText import adjust_text
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
@@ -16,8 +15,12 @@ from scipy import stats
 from decorators import include_plot, include_to_api
 from utils import calculate_age, get_day_of_year, get_evaluated_tierlist_df, \
     get_joined_tierlists_characters_df
+import matplotlib.colors as mcolors
+from matplotlib.colors import ListedColormap
+import seaborn as sns
 
 
+@include_plot
 @include_to_api
 def create_gender_distribution(characters, **kwargs):
     sex_counts = characters['sex'].value_counts()
@@ -55,7 +58,6 @@ def create_age_distribution_200y_focus(characters, **kwargs):
     plt.ylabel('Number of Characters')
     ax.legend(loc='upper right')
     return fig
-
 
 @include_to_api
 def create_age_distribution_normalized(characters, races, **kwargs):
@@ -1068,7 +1070,6 @@ def create_character_ranking_trend_linechart(
 
 
 @include_to_api
-@include_plot
 def create_character_ranking_heatmap(
         tierlists: pd.DataFrame,
         selected_authors=["Escaar"],
@@ -1104,11 +1105,6 @@ def create_character_ranking_heatmap(
     )
 
     fig, ax = plt.subplots(figsize=(12, 12))
-
-    import matplotlib.colors as mcolors
-    from matplotlib.colors import ListedColormap
-    import seaborn as sns
-
     # 6 discrete colors for Tiers D(0)..SS(5)
     tier_colors = [
         "#fddbc7",  # 0 -> D

@@ -12,7 +12,7 @@ import requests
 import mongo_connector
 from entities import Entity
 
-API_URL = "https://tome.zetsuboushii.site/api/"
+API_URL = "https://tome.zetsuboushii.site/static/json/"
 
 
 def get_potentially_cached_data(key: str, endpoint: str, force: bool, data_key: str = None) -> Dict[
@@ -47,14 +47,14 @@ def get_all_data(faergria_map_url: str, skip_faergria_map: bool = False, force: 
 Dict[str, Dict[str, Any]]:
     endpoints = {
         "characters_data": "characters.json",
-        "general_data": "data.json",
-        "races_data": "races.json",
-        "places_data": "places.json",
-        "actions_data": "actions.json",
-        "enemies_data": "enemies.json",
-        "effect_data": "effects.json",
-        "weapons_data": "weapons.json",
-        "weapon_abilities_data": "abilities.json"
+        "current_data": "current_date.json",
+        # "races_data": "races.json",
+        # "places_data": "places.json",
+        # "actions_data": "actions.json",
+        # "enemies_data": "enemies.json",
+        # "effect_data": "effects.json",
+        # "weapons_data": "weapons.json",
+        # "weapon_abilities_data": "abilities.json"
     }
     endpoints = {key: API_URL + endpoint for key, endpoint in endpoints.items()}
     data = {key: get_data_by_api(key, endpoint, force) for key, endpoint in

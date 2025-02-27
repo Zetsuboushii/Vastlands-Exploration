@@ -1,34 +1,48 @@
 from entities import Entity
 
 
+# todo check if it dicts should be converted to tuple for easier analysis as it now look like this in the df column [{'place': 'Tempel der Zeit', 'attachment': 'Hauptsitz'}]
 class Character(Entity):
     def __init__(self, name: str, surname: str, title: str, race: str, sex: str, birthday: str,
-                 height: float, weight: int, bust: int, underbust: int, waist: int, hip: int, shoulder_width: int,
-                 muscle_mass: int,
-                 functions: list[str], character_class: str, subclasses: list[str],
-                 masterclass: str, homes: list[str],
-                 alignment: str, affiliations: list[list[str]], likes: list[list[str]], dislikes: list[list[str]],
+                 aliases: list[dict],
+                 measurements: dict,
+                 functions: list[str],
+                 classes: dict,
+                 nationality: str,
+                 homes: list[dict],
+                 alignment: str,
+                 affiliations: list[str],
+                 likes: list[str],
+                 dislikes: list[str],
                  status: str,
-                 relationships: list[tuple[str, str]],
-                 lover: str):
+                 relationships: list[dict],
+                 alt_images: list[str],
+                 content: dict):
         self.name = name
         self.surname = surname
         self.title = title
         self.race = race
         self.sex = sex
         self.birthday = birthday
-        self.height = height
-        self.weight = weight
-        self.bust = bust
-        self.underbust = underbust
-        self.waist = waist
-        self.hip = hip
-        self.shoulder_width = shoulder_width
-        self.muscle_mass = muscle_mass
-        self.function = functions
-        self.character_class = character_class
-        self.subclasses = subclasses
-        self.masterclass = masterclass
+        self.aliases = aliases
+
+        # Unpack measurements
+        self.height = measurements.get('height', 0)
+        self.weight = measurements.get('weight', 0)
+        self.bust = measurements.get('bust', 0)
+        self.underbust = measurements.get('underbust', 0)
+        self.waist = measurements.get('waist', 0)
+        self.hip = measurements.get('hip', 0)
+        self.shoulder_width = measurements.get('shoulder_width', 0)
+        self.muscle_mass = measurements.get('muscle_mass', 0)
+
+        self.functions = functions
+
+        # Unpack class details
+        self.baseclass = classes.get('baseclass', '')
+        self.subclasses = classes.get('subclasses', [])
+        self.masterclass = classes.get('masterclass', '')
+        self.nationality = nationality
         self.homes = homes
         self.alignment = alignment
         self.affiliations = affiliations
@@ -36,7 +50,8 @@ class Character(Entity):
         self.dislikes = dislikes
         self.status = status
         self.relationships = relationships
-        self.lover = lover
+        self.alt_images = alt_images
+        self.content = content
 
     @staticmethod
     def from_json(data):
@@ -47,26 +62,18 @@ class Character(Entity):
             race=data.get('race', ''),
             sex=data.get('sex', ''),
             birthday=data.get('birthday', ''),
-            height=data.get('height', 0),
-            weight=data.get('weight', 0),
-            bust=data.get('bust', 0),
-            underbust=data.get('underbust', 0),
-            waist=data.get('waist', 0),
-            hip=data.get('hip', 0),
-            shoulder_width=data.get('shoulder_width', 0),
-            muscle_mass=data.get('muscle_mass', 0),
+            aliases=data.get('aliases', []),
+            measurements=data.get('measurements', {}),
             functions=data.get('functions', []),
-            character_class=data.get('class', ''),
-            subclasses=data.get('subclasses', []),
-            masterclass=data.get('masterclass', ''),
+            classes=data.get('classes', {}),
+            nationality=data.get('nationality', ''),
             homes=data.get('homes', []),
             alignment=data.get('alignment', ''),
             affiliations=data.get('affiliations', []),
             likes=data.get('likes', []),
             dislikes=data.get('dislikes', []),
-            status="am Leben" if data.get('status', None) == "true" else "tot" if data.get('status',
-                                                                                           None) == "false" else data.get(
-                'status', None),
+            status=data.get('status', ''),
             relationships=data.get('relationships', []),
-            lover=data.get('lover', '')
+            alt_images=data.get('alt_images', []),
+            content=data.get('content', {})
         )

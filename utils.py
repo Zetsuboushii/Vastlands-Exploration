@@ -2,7 +2,6 @@ from datetime import datetime
 
 import pandas as pd
 from soupsieve import select
-
 import mongo_connector
 from api import get_all_data, get_df_from_endpoint_data, save_character_images
 from entities.action import Action
@@ -46,9 +45,9 @@ def extract_month_and_apply_fantasy_name(birthday):
         return None, None
 
 
-def set_current_date(general_data):
+def set_current_date(current_ingame_data):
     global CURRENT_DATE
-    current_ingame_date = general_data.get('currentIngameDate', '')
+    current_ingame_date = current_ingame_data.get('current_ingame_date', '')
     CURRENT_DATE = current_ingame_date
 
 
@@ -213,7 +212,8 @@ def get_joined_tierlists_characters_df(characters: pd.DataFrame, tierlists: pd.D
 
 def get_dataframes(faergria_map_url: str, faergria_map_data_skip: bool, force: bool):
     data = get_all_data(faergria_map_url, faergria_map_data_skip, force)
-    set_current_date(data["general_data"])
+    set_current_date(data["current_data"])
+    # todo as effects is now a proper format a class for it needs to be added and parsed
     classes = {
         "actions_data": Action,
         "weapons_data": Weapon,
@@ -229,12 +229,12 @@ def get_dataframes(faergria_map_url: str, faergria_map_data_skip: bool, force: b
     dataframes = {
         key[:-5]: get_df_from_endpoint_data(endpoint_data, classes[key]) for key, endpoint_data
         in data.items()
-        if key not in ["general_data", "effect_data"]
+        if key not in ["current_data", "effect_data"]
     }
     save_character_images(dataframes["characters"])
     tierlist_df = get_tierlist_df()
     dataframes['tierlists'] = tierlist_df
-    return dataframes, data["effect_data"]
+    return dataframes
 
 
 def parse_dice(dice_str):
