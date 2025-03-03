@@ -1071,9 +1071,10 @@ def create_character_ranking_trend_linechart(
 @include_plot
 def create_character_ranking_heatmap(
         tierlists: pd.DataFrame,
-        selected_authors=["Escaar"],
+        selected_authors=["zetsu"],
         select_all_authors_flag=False,
         selected_character=None,  # None or string
+        newest_sessions=2,  # None or number you want to look back from the newest session
         printing_flag=False,
         **kwargs
 ):
@@ -1082,7 +1083,31 @@ def create_character_ranking_heatmap(
     The x-axis will be the session number, and the y-axis will be the character names.
     The cell color corresponds to the TierValue (D=0..SS=5), and the cell text shows the numeric tier.
     If float values are present (due to averaging), those floats are shown in the cells.
+
+    Parameters
+    ----------
+    tierlists : pd.DataFrame
+        Your main DataFrame containing tierlist data.
+    selected_authors : list of str, optional
+        List of authors to filter by. Default is ["zetsu"].
+    select_all_authors_flag : bool, optional
+        If True, ignore `selected_authors` and use all authors.
+    selected_character : str or None, optional
+        Filter for a single character (by name). If None, include all.
+    newest_sessions : int or None, optional
+        If given (e.g., 5), only include the most recent 5 sessions (based on sessionNr).
+        If None, include all sessions.
+    printing_flag : bool, optional
+        Whether to print intermediate info (debug/log).
+    **kwargs : dict
+        Additional keyword arguments (unused here).
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure or None
+        The heatmap figure, or None if no data after filtering.
     """
+
     # 1. Process data using your custom function (must return TierValue as floats if averaged)
     long_df = _process_tierlist_data(
         tierlists,
@@ -1096,14 +1121,23 @@ def create_character_ranking_heatmap(
         print("No characters have changed their rating based on the specified conditions.")
         return None
 
-    # 2. Pivot so that the y-axis is the Character (index) and x-axis is the sessionNr (columns)
+    # 2. Optionally filter for the most recent `newest` sessions
+    if newest_sessions is not None and newest_sessions > 0:
+        # Sort all unique session numbers
+        all_sessions = sorted(long_df['sessionNr'].unique())
+        # If we have more sessions than `newest`, slice the last `newest` ones
+        if len(all_sessions) > newest_sessions:
+            sessions_to_keep = all_sessions[-newest_sessions:]
+            long_df = long_df[long_df['sessionNr'].isin(sessions_to_keep)]
+
+    # 3. Pivot so that the y-axis is the Character (index) and x-axis is the sessionNr (columns)
     pivot_df = long_df.pivot(
         index='Character',
         columns='sessionNr',
         values='TierValue'
     )
 
-    fig, ax = plt.subplots(figsize=(12, 12))
+    fig, ax = plt.subplots(figsize=(10, 20))
 
     import matplotlib.colors as mcolors
     from matplotlib.colors import ListedColormap
@@ -1136,14 +1170,16 @@ def create_character_ranking_heatmap(
         annot=True,
         fmt=".2f",  # <-- Show float values with 2 decimal places
         cbar_kws={"ticks": range(6)},  # 0..5
-        ax=ax
+        ax=ax,
+        yticklabels=True,  # Ensures all characters appear
+        xticklabels=True
     )
 
     # Rename the colorbar ticks from 0..5 -> D..SS
     cbar = ax.collections[0].colorbar
     cbar.set_ticklabels(["D", "C", "B", "A", "S", "SS"])
 
-    # 3. Labeling
+    # 4. Labeling
     ax.set_xlabel("Session Number")
     ax.set_ylabel("Character")
 
