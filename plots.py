@@ -1074,7 +1074,7 @@ def create_character_ranking_heatmap(
         selected_authors=["zetsu"],
         select_all_authors_flag=False,
         selected_character=None,  # None or string
-        newest_sessions=2,  # None or number you want to look back from the newest session
+        newest_sessions=0,  # None or number you want to look back from the newest session
         printing_flag=False,
         **kwargs
 ):
