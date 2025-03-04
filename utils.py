@@ -2,7 +2,6 @@ from datetime import datetime
 
 import pandas as pd
 from soupsieve import select
-import mongo_connector
 from api import get_all_data, get_df_from_endpoint_data, save_character_images
 from entities.action import Action
 from entities.character import Character
@@ -129,11 +128,6 @@ def get_next_birthday(df_characters):
     else:
         print("No upcoming birthdays found.")
 
-
-def get_tierlist_df_by_db():
-    tierlists = mongo_connector.fetch_tierlists()
-    return pd.DataFrame(tierlists)
-
 def get_tierlist_df():
     import pandas as pd
     import json
@@ -210,8 +204,8 @@ def get_joined_tierlists_characters_df(characters: pd.DataFrame, tierlists: pd.D
     return combined_df
 
 
-def get_dataframes(faergria_map_url: str, faergria_map_data_skip: bool, force: bool):
-    data = get_all_data(faergria_map_url, faergria_map_data_skip, force)
+def get_dataframes():
+    data = get_all_data()
     set_current_date(data["current_data"])
     # todo as effects is now a proper format a class for it needs to be added and parsed
     classes = {

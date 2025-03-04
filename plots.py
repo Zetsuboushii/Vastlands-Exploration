@@ -365,7 +365,6 @@ def create_character_classes_combined_pie_charts(characters: pd.DataFrame, **kwa
                                min_percentage=0, obj=axes[1])
     return fig
 
-
 def create_relationship_web(characters: pd.DataFrame, **kwargs):
     # Initialize data structures
     df_characters = characters

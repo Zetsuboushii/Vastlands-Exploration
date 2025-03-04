@@ -6,45 +6,22 @@ from pathlib import Path
 from typing import List, Dict, Any
 
 import pandas as pd
-import pymongo
 import requests
-
-import mongo_connector
 from entities import Entity
 
 API_URL = "https://tome.zetsuboushii.site/static/json/"
 
 
-def get_potentially_cached_data(key: str, endpoint: str, force: bool, data_key: str = None) -> Dict[
-    str, Any]:
-    collection = mongo_connector.db[key]
-    if not force:
-        cur = collection.find().sort("meta.created", pymongo.DESCENDING)
-        with cur:
-            cache_result = next(cur, None)
-        if cache_result is not None:
-            return cache_result["data"]
-    data = requests.get(endpoint).json()
-    if data_key is not None:
-        data = data[data_key]
-    collection.insert_one({
-        "meta": {
-            "created": datetime.datetime.now()
-        },
-        "data": data
-    })
-    return data
-
-
-def get_data_by_api(key: str, endpoint: str, force: bool, data_key: str = None) -> Dict[str, Any]:
+def get_data_by_api(key: str, endpoint: str, data_key: str = None) -> Dict[str, Any]:
     response = requests.get(endpoint)
     data = response.json()
     if data_key is not None:
         data = data.get(data_key, {})
     return data
 
-def get_all_data(faergria_map_url: str, skip_faergria_map: bool = False, force: bool = False) -> \
-Dict[str, Dict[str, Any]]:
+
+def get_all_data() -> \
+        Dict[str, Dict[str, Any]]:
     endpoints = {
         "characters_data": "characters.json",
         "current_data": "current_date.json",
@@ -57,21 +34,8 @@ Dict[str, Dict[str, Any]]:
         # "weapon_abilities_data": "abilities.json"
     }
     endpoints = {key: API_URL + endpoint for key, endpoint in endpoints.items()}
-    data = {key: get_data_by_api(key, endpoint, force) for key, endpoint in
+    data = {key: get_data_by_api(key, endpoint) for key, endpoint in
             endpoints.items()}
-
-    if not skip_faergria_map:
-        faergria_map_endpoints = {
-            "markers_data": "/markers"
-        }
-        # Construct full URLs for the Faergria map data
-        faergria_endpoints = {key: faergria_map_url + endpoint for key, endpoint in
-                              faergria_map_endpoints.items()}
-
-        data |= {key: get_data_by_api(key, endpoint, force, "data") for key, endpoint in
-                 faergria_endpoints.items()}
-
-        fetch_faergria_map(faergria_map_url)
     return data
 
 
