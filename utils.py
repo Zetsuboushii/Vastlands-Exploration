@@ -5,10 +5,10 @@ from soupsieve import select
 from api import get_all_data, get_df_from_endpoint_data, save_character_images
 from entities.action import Action
 from entities.character import Character
-from entities.enemy import Enemy
+from entities.bestiarium import Bestiarium
 from entities.marker import Marker
 from entities.place import Place
-from entities.race import Race
+from entities.gentarium import Gentarium
 from entities.weapons import Weapon
 from entities.weapon_abilities import WeaponAbility
 import re
@@ -51,7 +51,7 @@ def set_current_date(current_ingame_data):
 
 
 def calculate_age(birthday):
-    current_year = int(CURRENT_DATE.split('-')[2])
+    current_year = int(CURRENT_DATE.split('.')[2])
     try:
         parts = birthday.split(".")
         birth_year = int(parts[2])
@@ -212,9 +212,9 @@ def get_dataframes():
         "actions_data": Action,
         "weapons_data": Weapon,
         "characters_data": Character,
-        "enemies_data": Enemy,
+        "bestiarium_data": Bestiarium,
         "places_data": Place,
-        "races_data": Race,
+        "gentarium_data": Gentarium,
         "markers_data": Marker,
         "weapon_abilities_data": WeaponAbility,
     }

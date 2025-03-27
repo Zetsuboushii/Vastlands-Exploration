@@ -19,8 +19,6 @@ import matplotlib.colors as mcolors
 from matplotlib.colors import ListedColormap
 import seaborn as sns
 
-
-@include_plot
 @include_to_api
 def create_gender_distribution(characters, **kwargs):
     sex_counts = characters['sex'].value_counts()
@@ -31,7 +29,6 @@ def create_gender_distribution(characters, **kwargs):
     ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
     ax.set_title('Distribution of Male and Female Characters')
     return fig
-
 
 def create_age_distribution_200y_focus(characters, **kwargs):
     characters['age'] = characters['birthday'].apply(calculate_age)
@@ -60,14 +57,15 @@ def create_age_distribution_200y_focus(characters, **kwargs):
     return fig
 
 @include_to_api
-def create_age_distribution_normalized(characters, races, **kwargs):
+def create_age_distribution_normalized(characters, gentarium, **kwargs):
     characters['age'] = characters['birthday'].apply(calculate_age)
     characters = characters.dropna(subset=['age'])
-    races['ageavg'] = pd.to_numeric(races['ageavg'], errors='coerce')
-    races = races.dropna(subset=['ageavg'])
-    races["norm_metric"] = races["ageavg"] / 100
+    gentarium['ageavg'] = pd.to_numeric(gentarium['ageavg'], errors='coerce')
+    gentarium = gentarium.dropna(subset=['ageavg'])
+    gentarium = gentarium[gentarium['ageavg'] != -1]
+    gentarium["norm_metric"] = gentarium["ageavg"] / 100
 
-    merge_df = pd.merge(characters, races, left_on="race", right_on="name", how="inner")
+    merge_df = pd.merge(characters, gentarium, left_on="race", right_on="name", how="inner")
     merge_df["normed_age"] = merge_df["age"] / merge_df["norm_metric"]
 
     male_characters = merge_df[merge_df['sex'] == 'm']
@@ -93,7 +91,6 @@ def create_age_distribution_normalized(characters, races, **kwargs):
     ax.legend(loc='upper right')
     return fig
 
-
 def create_birthday_data_presence_pie_chart(characters: pd.DataFrame, **kwargs):
     birthday_counts = (characters["birthday"] != "").value_counts()
     labels = ["Given", "Not given"]
@@ -103,7 +100,6 @@ def create_birthday_data_presence_pie_chart(characters: pd.DataFrame, **kwargs):
     plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
     ax.set_title("Characters with birthdays assigned or not")
     return fig
-
 
 def create_birthday_distribution_clock_diagram(characters: pd.DataFrame, **kwargs):
     # Birthdays that are actually set
@@ -136,7 +132,8 @@ def create_birthday_distribution_clock_diagram(characters: pd.DataFrame, **kwarg
 
 
 @include_to_api
-def create_combined_bar_charts(enemies: pd.DataFrame, min_percentage: float = 5.0, **kwargs):
+@include_plot
+def create_combined_bar_charts(bestiarium: pd.DataFrame, min_percentage: float = 5.0, **kwargs):
     fig, axes = plt.subplots(1, 3, figsize=(20, 8))
 
     def group_and_plot(data, column, ax, title):
@@ -193,23 +190,23 @@ def create_combined_bar_charts(enemies: pd.DataFrame, min_percentage: float = 5.
             )
 
     # Plot Weaknesses
-    group_and_plot(enemies, "weaknesses", axes[0], 'Distribution of Weaknesses')
+    group_and_plot(bestiarium, "weaknesses", axes[0], 'Distribution of Weaknesses')
 
     # Plot Resistances
-    group_and_plot(enemies, "resistances", axes[1], 'Distribution of Resistances')
+    group_and_plot(bestiarium, "resistances", axes[1], 'Distribution of Resistances')
 
     # Plot Immunities
-    group_and_plot(enemies, "immunities", axes[2], 'Distribution of Immunities')
+    group_and_plot(bestiarium, "immunities", axes[2], 'Distribution of Immunities')
 
     # Adjust layout
     plt.tight_layout()
     return fig
 
 
-def create_ability_score_distribution_plot(enemies: pd.DataFrame, **kwargs):
-    as_avg = enemies[["str", "dex", "con", "int", "wis", "cha"]].mean()
-    enemies['sum_stats'] = enemies[['str', 'dex', 'con', 'int', 'wis', 'cha']].sum(axis=1)
-    mean_sum_stats = enemies['sum_stats'].mean().round(2)
+def create_ability_score_distribution_plot(bestiarium: pd.DataFrame, **kwargs):
+    as_avg = bestiarium[["str", "dex", "con", "int", "wis", "cha"]].mean()
+    bestiarium['sum_stats'] = bestiarium[['str', 'dex', 'con', 'int', 'wis', 'cha']].sum(axis=1)
+    mean_sum_stats = bestiarium['sum_stats'].mean().round(2)
     as_avg = as_avg.round(2)
     overall_avg = as_avg.mean().round(2)
     as_avg["overall_avg"] = overall_avg
@@ -226,10 +223,10 @@ def create_ability_score_distribution_plot(enemies: pd.DataFrame, **kwargs):
     return fig
 
 
-def create_stats_distribution_plot(enemies: pd.DataFrame, **kwargs):
+def create_stats_distribution_plot(bestiarium: pd.DataFrame, **kwargs):
     # TODO: add movement range, but this can be complicated because enemies can have multiple ways of moving ag. flying, swimming
-    enemies["hp_ac_ratio"] = enemies["hp"] / enemies["ac"]
-    stats_avg: pd.Series = enemies[["hp", "ac", "hp_ac_ratio"]].mean()
+    bestiarium["hp_ac_ratio"] = bestiarium["hp"] / bestiarium["ac"]
+    stats_avg: pd.Series = bestiarium[["hp", "ac", "hp_ac_ratio"]].mean()
     stats_avg.round(2)
     fig, ax = plt.subplots()
     ax.bar(stats_avg.index, stats_avg.values)

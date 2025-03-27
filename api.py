@@ -25,10 +25,10 @@ def get_all_data() -> \
     endpoints = {
         "characters_data": "characters.json",
         "current_data": "current_date.json",
-        # "races_data": "races.json",
+        "gentarium_data": "gentarium.json",
         # "places_data": "places.json",
         # "actions_data": "actions.json",
-        # "enemies_data": "enemies.json",
+        "bestiarium_data": "bestiarium.json",
         # "effect_data": "effects.json",
         # "weapons_data": "weapons.json",
         # "weapon_abilities_data": "abilities.json"
