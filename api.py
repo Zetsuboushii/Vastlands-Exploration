@@ -12,7 +12,7 @@ import requests
 import mongo_connector
 from entities import Entity
 
-API_URL = "https://zetsuboushii.github.io/tome-of-the-vastlands/api/"
+API_URL = "https://v2.tome.zetsuboushii.site/api/"
 
 
 def get_potentially_cached_data(key: str, endpoint: str, force: bool, data_key: str = None) -> Dict[
@@ -36,6 +36,13 @@ def get_potentially_cached_data(key: str, endpoint: str, force: bool, data_key: 
     return data
 
 
+def get_data_by_api(key: str, endpoint: str, force: bool, data_key: str = None) -> Dict[str, Any]:
+    response = requests.get(endpoint)
+    data = response.json()
+    if data_key is not None:
+        data = data.get(data_key, {})
+    return data
+
 def get_all_data(faergria_map_url: str, skip_faergria_map: bool = False, force: bool = False) -> \
 Dict[str, Dict[str, Any]]:
     endpoints = {
@@ -46,9 +53,11 @@ Dict[str, Dict[str, Any]]:
         "actions_data": "actions.json",
         "enemies_data": "enemies.json",
         "effect_data": "effects.json",
+        "weapons_data": "weapons.json",
+        "weapon_abilities_data": "abilities.json"
     }
     endpoints = {key: API_URL + endpoint for key, endpoint in endpoints.items()}
-    data = {key: get_potentially_cached_data(key, endpoint, force) for key, endpoint in
+    data = {key: get_data_by_api(key, endpoint, force) for key, endpoint in
             endpoints.items()}
 
     if not skip_faergria_map:
@@ -59,7 +68,7 @@ Dict[str, Dict[str, Any]]:
         faergria_endpoints = {key: faergria_map_url + endpoint for key, endpoint in
                               faergria_map_endpoints.items()}
 
-        data |= {key: get_potentially_cached_data(key, endpoint, force, "data") for key, endpoint in
+        data |= {key: get_data_by_api(key, endpoint, force, "data") for key, endpoint in
                  faergria_endpoints.items()}
 
         fetch_faergria_map(faergria_map_url)
@@ -84,10 +93,11 @@ def fetch_faergria_map(faegria_map_url: str):
             shutil.copyfileobj(response.raw, file)
 
 
-def save_character_images(characters: pd.DataFrame, output_dir: str = "./data/images"):
-    output_dir = Path(output_dir)
+def save_character_images(characters: pd.DataFrame, output_dir: str = "data/images"):
+    project_root = Path(__file__).resolve().parent
+    output_dir = project_root / output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
-    base_url = "https://zetsuboushii.github.io/image-host/resized/dnd/characters/"
+    base_url = "https://images.zetsuboushii.site/resized/dnd/characters/"
     for character_name in characters["name"]:
         character_name = character_name.lower()
         image_url = f"{base_url}{character_name}.png"

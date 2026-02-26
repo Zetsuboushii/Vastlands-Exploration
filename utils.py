@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pandas as pd
+from soupsieve import select
 
 import mongo_connector
 from api import get_all_data, get_df_from_endpoint_data, save_character_images
@@ -10,6 +11,10 @@ from entities.enemy import Enemy
 from entities.marker import Marker
 from entities.place import Place
 from entities.race import Race
+from entities.weapons import Weapon
+from entities.weapon_abilities import WeaponAbility
+import re
+import numpy as np
 
 CURRENT_DATE = None
 
@@ -126,9 +131,41 @@ def get_next_birthday(df_characters):
         print("No upcoming birthdays found.")
 
 
-def get_tierlist_df():
+def get_tierlist_df_by_db():
     tierlists = mongo_connector.fetch_tierlists()
     return pd.DataFrame(tierlists)
+
+def get_tierlist_df():
+    import pandas as pd
+    import json
+    import os
+    data_list = []
+    root_path = os.path.dirname(os.path.abspath(__file__))
+    directory = os.path.join(root_path, 'data', 'tierlists')
+    for filename in os.listdir(directory):
+        if filename.endswith('.json'):
+            filepath = os.path.join(directory, filename)
+            basename = filename[len('tierlist_'):-len('.json')]
+            try:
+                author, sessionNr = basename.rsplit('_', 1)
+            except ValueError:
+                print(f"Filename {filename} does not match expected format 'tierlist_author_sessionNr.json'")
+                continue
+            with open(filepath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            entry = {
+                'author': str(author),
+                'sessionNr': int(sessionNr),
+                'SS': data.get('SS', []),
+                'S': data.get('S', []),
+                'A': data.get('A', []),
+                'B': data.get('B', []),
+                'C': data.get('C', []),
+                'D': data.get('D', [])
+            }
+            data_list.append(entry)
+    df = pd.DataFrame(data_list)
+    return df
 
 
 def get_evaluated_tierlist_df(tierlists):
@@ -179,11 +216,13 @@ def get_dataframes(faergria_map_url: str, faergria_map_data_skip: bool, force: b
     set_current_date(data["general_data"])
     classes = {
         "actions_data": Action,
+        "weapons_data": Weapon,
         "characters_data": Character,
         "enemies_data": Enemy,
         "places_data": Place,
         "races_data": Race,
-        "markers_data": Marker
+        "markers_data": Marker,
+        "weapon_abilities_data": WeaponAbility,
     }
     # "Calculate" dataframes for the respective object data from the endpoints,
     # but assign keys without "_data"
@@ -196,3 +235,66 @@ def get_dataframes(faergria_map_url: str, faergria_map_data_skip: bool, force: b
     tierlist_df = get_tierlist_df()
     dataframes['tierlists'] = tierlist_df
     return dataframes, data["effect_data"]
+
+
+def parse_dice(dice_str):
+    """Parses dice in format 'XdY+Z', 'XdY-Z', or 'XdY' and returns a tuple (X, Y, Z)."""
+    pattern = r'(\d+)d(\d+)([+-]\d+)?'
+    match_obj = re.fullmatch(pattern, dice_str.replace(' ', ''))
+    if match_obj:
+        X = int(match_obj.group(1))
+        Y = int(match_obj.group(2))
+        Z = int(match_obj.group(3)) if match_obj.group(3) else 0
+        return X, Y, Z
+    else:
+        raise ValueError(f"Invalid dice string: {dice_str}")
+
+
+def parse_dice_average(dice_str):
+    """Calculates the average value of a dice roll in the form XdY+Z."""
+    X, Y, Z = parse_dice(dice_str)
+    return (X * (Y + 1) / 2) + Z
+
+
+def calculate_aoe_area(aoe_type, range_value):
+    # Convert range from feet to tiles (1 tile = 5 x 5 feet)
+    range_in_tiles = int(int(range_value) / 5) if range_value else 0
+    match aoe_type:
+        case "radius":
+            area = 2 * (range_in_tiles ** 2) + 2 * range_in_tiles
+        case "cone":
+            area = range_in_tiles ** 2
+        case "line":
+            area = range_in_tiles
+        case "self":
+            area = 1
+        case _:
+            area = 1  # Assume single-target has minimal area impact
+    return area
+
+
+def combined_damage_statistics(damage_entries: list[str]):
+    total_min_damage = 0
+    total_max_damage = 0
+    total_avg_damage = 0
+    total_variance = 0
+
+    for damage in damage_entries:
+        if isinstance(damage, list):
+            dice_str = damage[0]
+        else:
+            dice_str = damage
+        X, Y, Z = parse_dice(dice_str)
+
+        min_damage = X * 1 + Z
+        max_damage = X * Y + Z
+        avg_damage = (X * (Y + 1) / 2) + Z
+        variance = X * (((Y ** 2) - 1) / 12)
+
+        total_min_damage += min_damage
+        total_max_damage += max_damage
+        total_avg_damage += avg_damage
+        total_variance += variance
+
+    combined_std_dev = np.sqrt(total_variance)
+    return total_min_damage, total_max_damage, total_avg_damage, combined_std_dev

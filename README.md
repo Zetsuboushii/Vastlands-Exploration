@@ -4,7 +4,6 @@ data exploration for tome of vastlands
 
 **Requirements:**
 - Python 3 installed (including the venv package)
-- Docker & Docker compose installed
 
 **Getting started (Unix)**: Run ```getting-started.sh```
 

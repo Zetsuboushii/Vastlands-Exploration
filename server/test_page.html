@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Plot Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #plot-container {
+            margin-top: 20px;
+            overflow: auto;
+            max-height: 800px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+<h1>Dynamic Plot Viewer</h1>
+
+<label for="plotSelect">Select a Plot Method:</label>
+<select id="plotSelect"></select>
+<button id="fetch-plot-button">Show Plot</button>
+
+<div id="plot-container"></div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const plotSelect = document.getElementById('plotSelect');
+        const plotContainer = document.getElementById('plot-container');
+
+        // Fetch the list of available plots when the page loads
+        fetch('http://localhost:5000/available_plots')
+            .then(response => response.json())
+            .then(plotMethods => {
+                plotMethods.forEach(method => {
+                    const option = document.createElement('option');
+                    option.value = method;
+                    option.textContent = method;
+                    plotSelect.appendChild(option);
+                });
+            })
+            .catch(err => console.error("Error fetching available plots:", err));
+
+        // Fetch and display the selected plot when the button is clicked
+        document.getElementById('fetch-plot-button').addEventListener('click', () => {
+            const selectedMethod = plotSelect.value;
+            const url = `http://localhost:5000/plot?method_name=${encodeURIComponent(selectedMethod)}`;
+
+            // Clear previous plot
+            plotContainer.innerHTML = '';
+
+            // Fetch the plot SVG
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch plot: ${response.statusText}`);
+                    }
+                    return response.text();
+                })
+                .then(svg => {
+                    plotContainer.innerHTML = svg;
+                })
+                .catch(err => console.error("Error fetching plot:", err));
+        });
+    });
+</script>
+</body>
+</html>

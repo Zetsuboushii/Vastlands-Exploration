@@ -2,7 +2,6 @@ import ast
 import os
 from pathlib import Path
 from typing import Optional
-
 import matplotlib.cm as cm
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
@@ -14,12 +13,12 @@ from PIL import Image
 from adjustText import adjust_text
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 from scipy import stats
-
-from decorators import include_plot
+from decorators import include_plot, include_to_api
 from utils import calculate_age, get_day_of_year, get_evaluated_tierlist_df, \
     get_joined_tierlists_characters_df
 
 
+@include_to_api
 def create_gender_distribution(characters, **kwargs):
     sex_counts = characters['sex'].value_counts()
     labels = sex_counts.index.tolist()
@@ -58,6 +57,7 @@ def create_age_distribution_200y_focus(characters, **kwargs):
     return fig
 
 
+@include_to_api
 def create_age_distribution_normalized(characters, races, **kwargs):
     characters['age'] = characters['birthday'].apply(calculate_age)
     characters = characters.dropna(subset=['age'])
@@ -133,31 +133,62 @@ def create_birthday_distribution_clock_diagram(characters: pd.DataFrame, **kwarg
     return fig
 
 
-def create_combined_pie_charts(enemies: pd.DataFrame, min_percentage: float = 2.0, **kwargs):
+@include_to_api
+def create_combined_bar_charts(enemies: pd.DataFrame, min_percentage: float = 5.0, **kwargs):
     fig, axes = plt.subplots(1, 3, figsize=(20, 8))
 
     def group_and_plot(data, column, ax, title):
         # Explode the column into separate rows
         df_normalized = data.explode(column).reset_index(drop=True)
+        total = len(data.index)
 
         # Group by the column and count occurrences
         group = df_normalized.groupby(column).size().sort_values(ascending=False)
-        total = group.sum()
 
         # Calculate percentages and separate small groups
         percentages = (group / total) * 100
-        large_groups = group[percentages >= min_percentage]
-        other_group = group[percentages < min_percentage].sum()
+        grouped_with_percentage = pd.concat([group, percentages], axis=1)
+        grouped_with_percentage.columns = ["count", "percentages"]
+
+        large_groups = grouped_with_percentage[
+            grouped_with_percentage["percentages"] >= min_percentage
+            ]
+        other_group = grouped_with_percentage[
+            grouped_with_percentage["percentages"] < min_percentage
+            ].sum()
+
+        other_count = other_group["count"]
+        other_percentage = other_group["percentages"]
 
         # Combine large groups and the "Other" category
-        if other_group > 0:
-            grouped_data = pd.concat([large_groups, pd.Series({'Other': other_group})])
+        if other_count > 0:
+            other_df = pd.DataFrame(
+                {
+                    "count": [other_count],
+                    "percentages": [other_percentage]
+                },
+                index=["Other"]
+            )
+            grouped_data = pd.concat([large_groups, other_df])
         else:
             grouped_data = large_groups
 
-        # Plot pie chart
-        ax.pie(grouped_data, labels=grouped_data.index, autopct='%1.1f%%', startangle=90)
+        # --- Plot as a bar chart using the "percentages" column ---
+        ax.bar(grouped_data.index, grouped_data["percentages"], color="skyblue")
         ax.set_title(title)
+        ax.set_ylabel("Percentage (%)")
+        ax.set_xticklabels(grouped_data.index, rotation=45, ha='right')
+
+        # Optionally, add percentage labels above each bar
+        for i, (label, row) in enumerate(grouped_data.iterrows()):
+            ax.text(
+                i,
+                row["percentages"] + 0.5,  # a small offset above the bar
+                f"{row['percentages']:.1f}%",
+                ha="center",
+                va="bottom",
+                fontsize=9
+            )
 
     # Plot Weaknesses
     group_and_plot(enemies, "weaknesses", axes[0], 'Distribution of Weaknesses')
@@ -213,6 +244,7 @@ def create_stats_distribution_plot(enemies: pd.DataFrame, **kwargs):
     return fig
 
 
+@include_to_api
 def create_character_class_bar_chart(characters: pd.DataFrame, **kwargs):
     character_classes = characters["character_class"].unique()
     sexes = characters["sex"].unique()
@@ -238,6 +270,7 @@ def create_character_class_bar_chart(characters: pd.DataFrame, **kwargs):
     plt.xticks(np.arange(n_classes), character_classes, rotation=45, ha='right')
     ax.legend()
     plt.tight_layout()
+    return fig
 
 
 def _create_grouping_pie_chart(df: pd.DataFrame, group_column: str, title: str, legend: bool = True,
@@ -535,7 +568,8 @@ def create_population_distribution_map(places: pd.DataFrame, markers: pd.DataFra
 
 
 def offset_image(y, character_name, ax, target_height):
-    img_path = os.path.join('data', 'images', f"{character_name.lower()}.png")
+    project_root = Path(__file__).resolve().parent
+    img_path = project_root / 'data' / 'images' / f"{character_name.lower()}.png"
 
     if not os.path.exists(img_path):
         print(f"Image for {character_name} not found at {img_path}")
@@ -557,6 +591,7 @@ def offset_image(y, character_name, ax, target_height):
     ax.add_artist(ab)
 
 
+@include_to_api
 def create_height_distribution_chart(characters: pd.DataFrame, target_image_height=100,
                                      bar_spacing=1,
                                      aspect_ratio=0.05, **kwargs):
@@ -610,13 +645,10 @@ def create_height_distribution_chart(characters: pd.DataFrame, target_image_heig
     plt.margins(y=0)
     plt.tight_layout()
 
-    output_dir = Path(output_dir)
-
-    plt.savefig(output_dir / "", format='svg')
-
     return fig
 
 
+@include_to_api
 def create_character_ranking_barchart(tierlists: pd.DataFrame, target_image_height=108,
                                       bar_spacing=0.1,
                                       aspect_ratio=0.05, **kwargs):
@@ -670,13 +702,10 @@ def create_character_ranking_barchart(tierlists: pd.DataFrame, target_image_heig
     plt.margins(y=0)
     plt.tight_layout()
 
-    output_dir = Path('data/plots/character_ranking_distribution.svg')
-    output_dir.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_dir, format='svg')
-
     return fig
 
 
+@include_to_api
 def create_character_ranking_barchart_no_image(tierlists: pd.DataFrame, **kwargs):
     rank_df = get_evaluated_tierlist_df(tierlists)
 
@@ -737,17 +766,19 @@ def _create_grouped_boxplots(characters: pd.DataFrame, x_grouping: str, y_values
     return fig
 
 
+@include_to_api
 def create_muscle_mass_boxplots_by_race(characters: pd.DataFrame, **kwargs):
     characters_copy = characters.copy()
     characters_copy = characters_copy[
         (characters_copy['muscle_mass'] != 0) & (characters_copy['muscle_mass'].notnull())]
     characters_copy = characters_copy.reset_index(drop=True)
-    _create_grouped_boxplots(characters_copy, "race", "muscle_mass", "Muscle mass",
+    return _create_grouped_boxplots(characters_copy, "race", "muscle_mass", "Muscle mass",
                              "Muscle mass distribution by race")
 
 
+@include_to_api
 def create_weight_boxplots_by_race(characters: pd.DataFrame, **kwargs):
-    _create_grouped_boxplots(characters, "race", "weight", "Weight", "Weight distribution by race")
+    return _create_grouped_boxplots(characters, "race", "weight", "Weight", "Weight distribution by race")
 
 
 def _create_correlation_plot(characters: pd.DataFrame, x_key: str, y_key: str, title: str,
@@ -803,6 +834,7 @@ def create_muscle_mass_height_correlation_plot(characters: pd.DataFrame, **kwarg
                                     filter_y_zeros=True, filter_x_zeros=True)
 
 
+@include_to_api
 def create_cup_rating_plot(characters: pd.DataFrame, tierlists: pd.DataFrame, **kwargs):
     combined_df = get_joined_tierlists_characters_df(characters, tierlists)
     combined_df = combined_df[combined_df["sex"] == "w"]
@@ -812,6 +844,7 @@ def create_cup_rating_plot(characters: pd.DataFrame, tierlists: pd.DataFrame, **
                                     filter_y_zeros=True, filter_x_zeros=True)
 
 
+@include_to_api
 def create_muscle_mass_rating_correlation_plot(characters: pd.DataFrame, tierlists: pd.DataFrame,
                                                **kwargs):
     combined_df = get_joined_tierlists_characters_df(characters, tierlists)
@@ -819,6 +852,7 @@ def create_muscle_mass_rating_correlation_plot(characters: pd.DataFrame, tierlis
                                     filter_y_zeros=True, filter_x_zeros=True)
 
 
+@include_to_api
 def create_height_rating_correlation_plot(characters: pd.DataFrame, tierlists: pd.DataFrame,
                                           **kwargs):
     combined_df = get_joined_tierlists_characters_df(characters, tierlists)
@@ -853,4 +887,315 @@ def create_race_class_correlation_plot(characters: pd.DataFrame, **kwargs):
     plt.xticks(rotation=45, ha='right')
 
     plt.tight_layout()
+    return fig
+
+
+def _process_tierlist_data(
+        tierlists: pd.DataFrame,
+        selected_authors=None,
+        select_all_authors_flag=False,
+        selected_character=None,
+        printing_flag=True
+) -> pd.DataFrame:
+    """
+    Processes the tierlist data to produce a DataFrame (long_df) that:
+      - Filters by selected authors
+      - Fills missing session data
+      - Explodes tier columns
+      - Converts tiers (D, C, B, A, S, SS) into numeric values (D=0,...,SS=5)
+      - (Optionally) prints the rating changes for each character
+
+    Returns:
+        pd.DataFrame: A long-form DataFrame with columns:
+                      ['sessionNr', 'Character', 'TierValue']
+                      If multiple authors are involved (or select_all_authors_flag is True),
+                      this is averaged across authors.
+    """
+
+    if selected_authors is None:
+        selected_authors = ["zetsu"]  # default fallback
+    if isinstance(selected_authors, str):
+        selected_authors = [selected_authors]
+
+    # 1. Filter authors
+    if select_all_authors_flag:
+        filter_df = tierlists.copy()
+    else:
+        filter_df = tierlists[tierlists['author'].isin(selected_authors)].copy()
+
+    # 2. Fill sessions up to global max
+    max_session = filter_df['sessionNr'].max()
+    continuous_author_dfs = []
+    for author, group in filter_df.groupby('author', group_keys=False):
+        group = group.set_index('sessionNr').sort_index()
+        start_session = group.index.min()
+        all_sessions = range(start_session, max_session + 1)
+        group = group.reindex(all_sessions)
+        group = group.ffill()
+        group = group.reset_index().rename(columns={'index': 'sessionNr'})
+        group['author'] = author
+        continuous_author_dfs.append(group)
+    filter_df = pd.concat(continuous_author_dfs, ignore_index=True)
+
+    # 3. Explode tiers into long form, mapping D=0..SS=5
+    tier_mapping = {"D": 0, "C": 1, "B": 2, "A": 3, "S": 4, "SS": 5}
+    tier_cols = ["D", "C", "B", "A", "S", "SS"]
+
+    exploded = []
+    for tier_col in tier_cols:
+        tmp = filter_df[['sessionNr', 'author', tier_col]].copy()
+        tmp = tmp.explode(tier_col)
+        tmp['Character'] = tmp[tier_col]
+        tmp['Tier'] = tier_col
+        tmp.drop(columns=[tier_col], inplace=True)
+        exploded.append(tmp)
+
+    long_df = pd.concat(exploded, ignore_index=True).dropna(subset=["Character"])
+    long_df['TierValue'] = long_df['Tier'].map(tier_mapping)
+
+    # 4. If multiple authors, average the TierValue
+    authors_used = filter_df['author'].unique()
+    if select_all_authors_flag or len(authors_used) > 1:
+        long_df = (
+            long_df
+            .groupby(['sessionNr', 'Character'], as_index=False)['TierValue']
+            .mean()
+        )
+
+    long_df = long_df.sort_values(by=['Character', 'sessionNr'])
+
+    # 5. Identify characters that have changed
+    changes_per_char = (
+        long_df
+        .groupby('Character')['TierValue']
+        .apply(lambda x: (x.diff().fillna(0) != 0).any())
+    )
+    changing_characters = changes_per_char[changes_per_char].index
+
+    if selected_character:
+        if selected_character not in changing_characters:
+            if printing_flag:
+                print(f"The character '{selected_character}' never changed ratings.")
+            return pd.DataFrame([])  # Return empty
+        changing_characters = [selected_character]
+
+    long_df = long_df[long_df['Character'].isin(changing_characters)]
+
+    # 6. Optional printing of rating changes
+    if printing_flag and not long_df.empty:
+        long_df_sorted = long_df.sort_values(by=['Character', 'sessionNr'])
+        grouped = long_df_sorted.groupby('Character')
+        for character, group in grouped:
+            group = group.sort_values('sessionNr')
+            sessions = group['sessionNr'].tolist()
+            tier_values = group['TierValue'].tolist()
+            for i in range(1, len(tier_values)):
+                if tier_values[i] != tier_values[i - 1]:
+                    print(f"{character} - Session {sessions[i - 1]}: {tier_values[i - 1]} -> "
+                          f"Session {sessions[i]}: {tier_values[i]}")
+
+    return long_df
+
+
+def create_character_ranking_trend_linechart(
+        tierlists: pd.DataFrame,
+        selected_authors=["zetsu"],
+        select_all_authors_flag=False,
+        selected_character=None,
+        printing_flag=True,
+        **kwargs
+):
+    """
+    Creates a line chart that shows how the ranking changes for characters over sessions.
+    D=0 .. SS=5 on the y-axis.
+    """
+    long_df = _process_tierlist_data(
+        tierlists,
+        selected_authors=selected_authors,
+        select_all_authors_flag=select_all_authors_flag,
+        selected_character=selected_character,
+        printing_flag=printing_flag
+    )
+
+    if long_df.empty:
+        print("No characters have changed their rating based on the specified conditions.")
+        return None
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    unique_chars = long_df['Character'].unique()
+    cmap = plt.cm.get_cmap('tab20', len(unique_chars))
+
+    markers = ['o', 's', 'd', '^', 'v', '<', '>', 'p', 'h', 'H']
+    line_styles = ['-', '--', '-.', ':']
+
+    for i, char in enumerate(unique_chars):
+        char_data = long_df[long_df['Character'] == char]
+        marker = markers[i % len(markers)]
+        style = line_styles[(i // len(markers)) % len(line_styles)]
+        ax.plot(
+            char_data['sessionNr'],
+            char_data['TierValue'],
+            marker=marker,
+            linestyle=style,
+            label=char,
+            color=cmap(i),
+            alpha=0.8
+        )
+
+    # Build a suitable title for the authors
+    authors_used = [selected_authors] if isinstance(selected_authors, str) else selected_authors
+    authors_used = list(set(authors_used))  # unique
+    if select_all_authors_flag:
+        title_authors = "All Authors"
+    else:
+        if len(authors_used) == 1:
+            title_authors = authors_used[0]
+        elif 1 < len(authors_used) < 5:
+            title_authors = ", ".join(authors_used)
+        else:
+            title_authors = "Multiple Authors"
+
+    ax.set_title(f"Character Tier Changes Over Sessions\n(Authors: {title_authors})")
+    ax.set_xlabel("Session Number")
+    ax.set_ylabel("TierValue (D=0 .. SS=5)")
+    ax.set_xticks(sorted(long_df['sessionNr'].unique()))
+    ax.set_yticks(range(6))  # 0..5
+    ax.set_yticklabels(["D", "C", "B", "A", "S", "SS"])
+    ax.legend()
+    ax.grid(True)
+
+    return fig
+
+
+@include_to_api
+@include_plot
+def create_character_ranking_heatmap(
+        tierlists: pd.DataFrame,
+        selected_authors=["zetsu"],
+        select_all_authors_flag=False,
+        selected_character=None,  # None or string
+        newest_sessions=0,  # None or number you want to look back from the newest session
+        printing_flag=False,
+        **kwargs
+):
+    """
+    Creates a heatmap that shows how the ranking changes for characters over sessions.
+    The x-axis will be the session number, and the y-axis will be the character names.
+    The cell color corresponds to the TierValue (D=0..SS=5), and the cell text shows the numeric tier.
+    If float values are present (due to averaging), those floats are shown in the cells.
+
+    Parameters
+    ----------
+    tierlists : pd.DataFrame
+        Your main DataFrame containing tierlist data.
+    selected_authors : list of str, optional
+        List of authors to filter by. Default is ["zetsu"].
+    select_all_authors_flag : bool, optional
+        If True, ignore `selected_authors` and use all authors.
+    selected_character : str or None, optional
+        Filter for a single character (by name). If None, include all.
+    newest_sessions : int or None, optional
+        If given (e.g., 5), only include the most recent 5 sessions (based on sessionNr).
+        If None, include all sessions.
+    printing_flag : bool, optional
+        Whether to print intermediate info (debug/log).
+    **kwargs : dict
+        Additional keyword arguments (unused here).
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure or None
+        The heatmap figure, or None if no data after filtering.
+    """
+
+    # 1. Process data using your custom function (must return TierValue as floats if averaged)
+    long_df = _process_tierlist_data(
+        tierlists,
+        selected_authors=selected_authors,
+        select_all_authors_flag=select_all_authors_flag,
+        selected_character=selected_character,
+        printing_flag=printing_flag
+    )
+
+    if long_df.empty:
+        print("No characters have changed their rating based on the specified conditions.")
+        return None
+
+    # 2. Optionally filter for the most recent `newest` sessions
+    if newest_sessions is not None and newest_sessions > 0:
+        # Sort all unique session numbers
+        all_sessions = sorted(long_df['sessionNr'].unique())
+        # If we have more sessions than `newest`, slice the last `newest` ones
+        if len(all_sessions) > newest_sessions:
+            sessions_to_keep = all_sessions[-newest_sessions:]
+            long_df = long_df[long_df['sessionNr'].isin(sessions_to_keep)]
+
+    # 3. Pivot so that the y-axis is the Character (index) and x-axis is the sessionNr (columns)
+    pivot_df = long_df.pivot(
+        index='Character',
+        columns='sessionNr',
+        values='TierValue'
+    )
+
+    fig, ax = plt.subplots(figsize=(10, 20))
+
+    import matplotlib.colors as mcolors
+    from matplotlib.colors import ListedColormap
+    import seaborn as sns
+
+    # 6 discrete colors for Tiers D(0)..SS(5)
+    tier_colors = [
+        "#fddbc7",  # 0 -> D
+        "#f4a582",  # 1 -> C
+        "#d6604d",  # 2 -> B
+        "#b2182b",  # 3 -> A
+        "#67001f",  # 4 -> S
+        "#3c000f",  # 5 -> SS
+    ]
+    cmap = ListedColormap(tier_colors)
+
+    # Boundaries = -0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5
+    # This means:
+    #   values in [-0.5, 0.5) -> color 0 (D),
+    #   values in [0.5, 1.5)  -> color 1 (C),
+    #   ...
+    #   values in [4.5, 5.5)  -> color 5 (SS).
+    norm = mcolors.BoundaryNorm(boundaries=[-0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5], ncolors=6)
+
+    # annot=True to show the cell value, fmt=".2f" to display float values with 2 decimals
+    sns.heatmap(
+        pivot_df,
+        cmap=cmap,
+        norm=norm,
+        annot=True,
+        fmt=".2f",  # <-- Show float values with 2 decimal places
+        cbar_kws={"ticks": range(6)},  # 0..5
+        ax=ax,
+        yticklabels=True,  # Ensures all characters appear
+        xticklabels=True
+    )
+
+    # Rename the colorbar ticks from 0..5 -> D..SS
+    cbar = ax.collections[0].colorbar
+    cbar.set_ticklabels(["D", "C", "B", "A", "S", "SS"])
+
+    # 4. Labeling
+    ax.set_xlabel("Session Number")
+    ax.set_ylabel("Character")
+
+    authors_used = [selected_authors] if isinstance(selected_authors, str) else selected_authors
+    authors_used = list(set(authors_used))  # unique
+    if select_all_authors_flag:
+        title_authors = "All Authors"
+    else:
+        if len(authors_used) == 1:
+            title_authors = authors_used[0]
+        elif 1 < len(authors_used) < 5:
+            title_authors = ", ".join(authors_used)
+        else:
+            title_authors = "Multiple Authors"
+
+    ax.set_title(f"Character Tier Changes Over Sessions\n(Authors: {title_authors})")
+
+    fig.tight_layout()
     return fig
